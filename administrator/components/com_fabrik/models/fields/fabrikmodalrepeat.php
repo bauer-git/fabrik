@@ -51,7 +51,10 @@ class JFormFieldFabrikModalrepeat extends JFormField
 		$j3 = FabrikWorker::j3();
 
 		// Needed for repeating modals in gmaps viz
-		$subForm->repeatCounter = (int) @$this->form->repeatCounter;
+// Phil changed to stop error triggered by @
+// Move/remove initialization of $this->form->repeatCounter that was being done later in this function 		
+//		$subForm->repeatCounter = (int) @$this->form->repeatCounter;
+		$this->form->repeatCounter = $subForm->repeatCounter = isset($this->form->repeatCounter) ? (int) $this->form->repeatCounter : 0 ;
 
 		/**
 		 * f3 hack
@@ -187,11 +190,6 @@ class JFormFieldFabrikModalrepeat extends JFormField
 		if (!array_key_exists($modalId, $modalRepeat))
 		{
 			$modalRepeat[$modalId] = array();
-		}
-
-		if (!isset($this->form->repeatCounter))
-		{
-			$this->form->repeatCounter = 0;
 		}
 
 		if (!array_key_exists($this->form->repeatCounter, $modalRepeat[$modalId]))
