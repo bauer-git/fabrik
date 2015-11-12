@@ -4,7 +4,7 @@
  *
  * @package     Joomla.Plugin
  * @subpackage  Fabrik.visualization.fusionchart
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -627,7 +627,7 @@ class FabrikModelFusionchart extends FabrikFEModelVisualization
 						}
 
 						$tmpgdata[] = (trim($row->$column) == '') ? -1 : (float) $row->$column;
-						$tmpglabels[] = !empty($label) ? strip_tags($row->$label) : '';
+						$tmpglabels[] = !empty($label) ? html_entity_decode(strip_tags($row->$label)) : '';
 					}
 
 					if (!empty($tmpgdata))

@@ -4,7 +4,7 @@
  *
  * @package     Joomla
  * @subpackage  Form
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -20,7 +20,6 @@ require_once JPATH_ADMINISTRATOR . '/components/com_fabrik/helpers/element.php';
  * @subpackage  Form
  * @since       1.6
  */
-
 class JFormFieldSwapList extends JFormFieldList
 {
 	/**
@@ -35,7 +34,6 @@ class JFormFieldSwapList extends JFormFieldList
 	 *
 	 * @return  string	The field input markup.
 	 */
-
 	protected function getInput()
 	{
 		$j3 = FabrikWorker::j3();
@@ -103,7 +101,6 @@ class JFormFieldSwapList extends JFormFieldList
 	 *
 	 * @return  string  The field label markup.
 	 */
-
 	protected function getLabel()
 	{
 		return '';
@@ -114,7 +111,6 @@ class JFormFieldSwapList extends JFormFieldList
 	 *
 	 * @return  array	list of groups, html list of groups
 	 */
-
 	public function getGroupList()
 	{
 		$db = FabrikWorker::getDbo(true);
@@ -147,7 +143,6 @@ class JFormFieldSwapList extends JFormFieldList
 	 *
 	 * @return  array  list of groups, html list of groups
 	 */
-
 	public function getCurrentGroupList()
 	{
 		$db = FabrikWorker::getDbo(true);

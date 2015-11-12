@@ -4,7 +4,7 @@
  *
  * @package     Joomla.Plugin
  * @subpackage  Fabrik.element.thumbs
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -546,7 +546,7 @@ class PlgFabrik_ElementThumbs extends PlgFabrik_Element
 						. " AND thumb = 'up') - (SELECT COUNT(thumb) FROM #__{package}_thumbs WHERE listid = " . (int) $listId . " AND formid = "
 						. (int) $formId . " AND row_id = " . $db->q($rowId) . " AND element_id = " . (int) $elementId
 						. " AND thumb = 'down'))
-	                    WHERE " . $this->getlistModel()->getTable()->db_primary_key . " = " . $db->q($rowId) . "
+	                    WHERE " . $this->getlistModel()->getPrimaryKey() . " = " . $db->q($rowId) . "
 	                        LIMIT 1");
 
 			try
@@ -751,8 +751,20 @@ class PlgFabrik_ElementThumbs extends PlgFabrik_Element
 		$db->setQuery($query);
 		$db->execute();
 
-		// Update for comments plugin needs special column adding
+		/**
+		 * Check if we need to update the table ...
+		 *
+		 * Update for comments plugin needs 'special' column adding,,
+		 * Check for older versions of the table needing tableid chenged to listid
+		 */
+
 		$cols = $db->getTableColumns('#__{package}_thumbs');
+
+		if (array_key_exists('tableid', $cols))
+		{
+			$db->setQuery('ALTER TABLE #__{package}_thumbs CHANGE ' . $db->qn('tableid') . ' ' . $db->qn('listid') . ' INT(6)');
+			$db->execute();
+		}
 
 		if (!array_key_exists('special', $cols))
 		{

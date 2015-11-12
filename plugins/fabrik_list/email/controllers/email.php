@@ -4,7 +4,7 @@
  *
  * @package     Joomla.Plugin
  * @subpackage  Fabrik.list.email
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -52,7 +52,8 @@ class FabrikControllerListemail extends JControllerLegacy
 	 */
 	public function popupwin()
 	{
-		$input = $this->app->input;
+		$app = JFactory::getApplication();
+		$input = $app->input;
 		$document = JFactory::getDocument();
 		$viewName = 'popupwin';
 		$viewType = $document->getType();
@@ -89,7 +90,8 @@ class FabrikControllerListemail extends JControllerLegacy
 	 */
 	public function doemail()
 	{
-		$input = $this->app->input;
+		$app = JFactory::getApplication();
+		$input = $app->input;
 		$pluginManager = JModelLegacy::getInstance('Pluginmanager', 'FabrikFEModel');
 		$model = $pluginManager->getPlugIn('email', 'list');
 		$listModel = $this->getModel('List', 'FabrikFEModel');

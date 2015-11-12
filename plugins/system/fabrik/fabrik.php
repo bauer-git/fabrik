@@ -5,7 +5,7 @@
  *
  * @package     Joomla.Plugin
  * @subpackage  System
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -194,9 +194,19 @@ class PlgSystemFabrik extends JPlugin
 	public function onAfterInitialise()
 	{
 		jimport('joomla.filesystem.file');
+
+		/**
+		 * Added allow_user_defines to global config, defaulting to No, so even if a user_defines.php is present
+		 * it won't get used unless this option is specifically set.  Did this because it looks like a user_defines.php
+		 * managed to creep in to a release ZIP at some point, so some people unknowingly have one, which started causing
+		 * issues after we added some more includes to defines.php.
+		 */
+		$fbConfig = JComponentHelper::getParams('com_fabrik');
+		$allowUserDefines = $fbConfig->get('allow_user_defines', '0') === '1';
 		$p = JPATH_SITE . '/plugins/system/fabrik/';
-		$defines = JFile::exists($p . 'user_defines.php') ? $p . 'user_defines.php' : $p . 'defines.php';
+		$defines = $allowUserDefines && JFile::exists($p . 'user_defines.php') ? $p . 'user_defines.php' : $p . 'defines.php';
 		require_once $defines;
+
 		$this->setBigSelects();
 	}
 
@@ -390,7 +400,7 @@ class PlgSystemFabrik extends JPlugin
 			 * might add seperate config setting for global search max at some point.
 			 */
 			$listModel->setLimits(0, $fbConfig->get('filter_list_max', 100));
-			
+
 			$allRows = $listModel->getData();
 			$elementModel = $listModel->getFormModel()->getElement($params->get('search_description', $table->label), true);
 			$descName = is_object($elementModel) ? $elementModel->getFullName() : '';

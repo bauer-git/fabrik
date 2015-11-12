@@ -4,7 +4,7 @@
  *
  * @package     Joomla.Plugin
  * @subpackage  Fabrik.list.email
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -27,7 +27,7 @@ class PlgFabrik_ListEmail extends PlgFabrik_List
 	 *
 	 * @var string
 	 */
-	protected $buttonPrefix = 'envelope';
+	protected $buttonPrefix = 'email';
 
 	/**
 	 * SMS gateway instance
@@ -266,7 +266,7 @@ class PlgFabrik_ListEmail extends PlgFabrik_List
 		$model       = $this->listModel;
 		$input = $this->app->input;
 
-		$pk          = $model->getTable()->db_primary_key;
+		$pk          = $model->getPrimaryKey();
 		$pk2         = FabrikString::safeColNameToArrayKey($pk) . '_raw';
 
 		/**

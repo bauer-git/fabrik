@@ -4,7 +4,7 @@
  *
  * @package     Joomla.Plugin
  * @subpackage  Fabrik.form.redirect
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -360,12 +360,13 @@ class PlgFabrik_FormRedirect extends PlgFabrik_Form
 	 */
 	protected function _storeInSession()
 	{
+		/** @var FabrikFEModelForm $formModel */
 		$formModel = $this->getModel();
 		$listModel = $formModel->getlistModel();
 		$input = $this->app->input;
 		$store = array();
 
-		$pk = FabrikString::safeColNameToArrayKey($listModel->getTable()->db_primary_key);
+		$pk = $listModel->getPrimaryKey(true);
 
 		if ($this->data['save_in_session'] == '1')
 		{

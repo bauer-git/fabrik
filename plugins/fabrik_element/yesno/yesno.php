@@ -4,7 +4,7 @@
  *
  * @package     Joomla.Plugin
  * @subpackage  Fabrik.element.yesno
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -427,7 +427,7 @@ class PlgFabrik_ElementYesno extends PlgFabrik_ElementRadiobutton
 			}
 			else
 			{
-				$pk = $listModel->getTable()->db_primary_key;
+				$pk = $listModel->getPrimaryKey();
 			}
 
 			$shortPk = FabrikString::shortColName($pk);
@@ -464,6 +464,30 @@ class PlgFabrik_ElementYesno extends PlgFabrik_ElementRadiobutton
 	public function getChangeEvent()
 	{
 		return $this->buttonGroup() ? 'click' : 'change';
+	}
+
+	/**
+	 * Get classes to assign to the grid
+	 * An array of arrays of class names, keyed as 'container', 'label' or 'input',
+	 *
+	 * @return  array
+	 */
+	protected function gridClasses()
+	{
+		return array(
+			'label' => array('btn-default'),
+			'container' => array('btn-radio')
+		);
+	}
+
+	/**
+	 * Get data attributes to assign to the container
+	 *
+	 * @return  array
+	 */
+	protected function dataAttributes()
+	{
+		return array('data-toggle="buttons"');
 	}
 
 }

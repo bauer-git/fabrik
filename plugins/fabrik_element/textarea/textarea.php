@@ -4,7 +4,7 @@
  *
  * @package     Joomla.Plugin
  * @subpackage  Fabrik.element.textarea
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -119,40 +119,40 @@ class PlgFabrik_ElementTextarea extends PlgFabrik_Element
 		{
 			$data = $this->tagify($data);
 		}
-
-		// $$$rob don't strip slashes here - this is done when saving to db now
-		if (!$this->useWysiwyg())
+		else
 		{
-			if (is_array($data))
+			if (!$this->useWysiwyg())
 			{
-				for ($i = 0; $i < count($data); $i++)
+				if (is_array($data))
 				{
-					$data[$i] = nl2br($data[$i]);
+					for ($i = 0; $i < count($data); $i++)
+					{
+						$data[$i] = nl2br($data[$i]);
+					}
+				}
+				else
+				{
+					if (is_object($data))
+					{
+						$this->convertDataToString($data);
+					}
+
+					$data = nl2br($data);
 				}
 			}
-			else
+
+			$truncateWhere = (int) $params->get('textarea-truncate-where', 0);
+
+			if ($data !== '' && ($truncateWhere === 1 || $truncateWhere === 3))
 			{
-				if (is_object($data))
+				$opts = $this->truncateOpts();
+				$data = fabrikString::truncate($data, $opts);
+				$listModel = $this->getListModel();
+
+				if (JArrayHelper::getValue($opts, 'link', 1))
 				{
-					$this->convertDataToString($data);
+					$data = $listModel->_addLink($data, $this, $thisRow);
 				}
-
-				$data = nl2br($data);
-			}
-		}
-
-		if (!$params->get('textarea-tagify') && $data !== ''
-			&&
-			((int) $params->get('textarea-truncate-where', 0) === 1 || (int) $params->get('textarea-truncate-where', 0) === 3)
-		)
-		{
-			$opts = $this->truncateOpts();
-			$data = fabrikString::truncate($data, $opts);
-			$listModel = $this->getListModel();
-
-			if (JArrayHelper::getValue($opts, 'link', 1))
-			{
-				$data = $listModel->_addLink($data, $this, $thisRow);
 			}
 		}
 
@@ -468,10 +468,10 @@ class PlgFabrik_ElementTextarea extends PlgFabrik_Element
 		if ($this->useWysiwyg())
 		{
 			// $$$ rob need to use the NAME as the ID when wysiwyg end in joined group
-			$id = $this->getHTMLName($repeatCounter);
+			//$id = $this->getHTMLName($repeatCounter);
 
 			// Testing not using name as duplication of group does not trigger clone()
-			// $id = $this->getHTMLId($repeatCounter);
+			$id = $this->getHTMLId($repeatCounter);
 
 			if ($this->inDetailedView)
 			{

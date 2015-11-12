@@ -4,7 +4,7 @@
  *
  * @package     Joomla.Plugin
  * @subpackage  Fabrik.form.paypal
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -599,6 +599,8 @@ class PlgFabrik_FormPaypal extends PlgFabrik_Form
 	 */
 	public function onIpn()
 	{
+		//header('HTTP/1.1 200 OK');
+
 		$input = $this->app->input;
 		$mail = JFactory::getMailer();
 		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_fabrik/tables');
@@ -662,20 +664,25 @@ class PlgFabrik_FormPaypal extends PlgFabrik_Form
 			$req .= "&$key=$value";
 		}
 
-		// Post back to PayPal system to validate
-		$header = "POST /cgi-bin/webscr HTTP/1.0\r\n";
-		$header .= "Host: www.paypal.com:443\r\n";
-		$header .= "Content-Type: application/x-www-form-urlencoded\r\n";
-		$header .= "Content-Length: " . JString::strlen($req) . "\r\n\r\n";
-
 		if ($_POST['test_ipn'] == 1)
 		{
-			$paypalUrl = 'ssl://www.sandbox.paypal.com';
+			$paypalHost = 'www.sandbox.paypal.com';
 		}
 		else
 		{
-			$paypalUrl = 'ssl://www.paypal.com';
+			$paypalHost = 'www.paypal.com';
 		}
+
+		$paypalUrl = 'ssl://' . $paypalHost;
+
+		// Post back to PayPal system to validate
+		$header = "POST /cgi-bin/webscr HTTP/1.1\r\n";
+		$header .= "Host: " . $paypalHost . "\r\n";
+		$header .= "Connection: close\r\n";
+		$header .= "User-Agent: Fabrik Joomla Plugin\r\n";
+		$header .= "Content-Type: application/x-www-form-urlencoded\r\n";
+		$header .= "Content-Length: " . JString::strlen($req) . "\r\n\r\n";
+
 
 		// Assign posted variables to local variables
 		$item_name = $input->get('item_name', '', 'string');
@@ -692,8 +699,10 @@ class PlgFabrik_FormPaypal extends PlgFabrik_Form
 			. ' ' . $input->get('address_state', '', 'string') . ' '
 			. $input->get('address_city', '', 'string') . ' ' . $input->get('address_country_code', '', 'string');
 
-		$status = 'ok';
+		$status = 'form.paypal.ipnfailure.empty';
 		$errMsg = '';
+
+		$fullResponse = array();
 
 		if (empty($formId))
 		{
@@ -717,6 +726,7 @@ class PlgFabrik_FormPaypal extends PlgFabrik_Form
 				while (!feof($fp))
 				{
 					$res = fgets($fp, 1024);
+					$tres = trim($res);
 					/* paypal steps (from their docs):
 					 * check the payment_status is Completed
 					 * check that txn_id has not been previously processed
@@ -724,8 +734,10 @@ class PlgFabrik_FormPaypal extends PlgFabrik_Form
 					 * check that payment_amount/payment_currency are correct
 					 * process payment
 					 */
-					if (JString::strcmp($res, "VERIFIED") == 0)
+					if (JString::strcmp($tres, "VERIFIED") === 0)
 					{
+						$status = 'ok';
+
 						// $$tom This block Paypal from updating the IPN field if the payment status evolves (e.g. from Pending to Completed)
 						// $$$ hugh - added check of status, so only barf if there is a status field, and it is Completed for this txn_id
 						if (!empty($ipnTxnField) && !empty($ipnStatusField))
@@ -756,6 +768,13 @@ class PlgFabrik_FormPaypal extends PlgFabrik_Form
 								}
 							}
 						}
+						else
+						{
+							$log->message_type = 'form.paypal.ipndebug.ipn_no_txn_fields';
+							$log->message = "No IPN txn or status fields specified, can't test for reversed, refunded or cancelled";
+							$log->store();
+						}
+
 
 						if ($status == 'ok')
 						{
@@ -804,6 +823,9 @@ class PlgFabrik_FormPaypal extends PlgFabrik_Form
 
 									if ($status != 'ok')
 									{
+										$log->message_type = 'form.paypal.ipndebug.ipn_function_not_ok';
+										$log->message = "The IPN function $ipnFunction did not return ok";
+										$log->store();
 										break;
 									}
 								}
@@ -816,9 +838,18 @@ class PlgFabrik_FormPaypal extends PlgFabrik_Form
 
 									if ($status != 'ok')
 									{
+										$log->message_type = 'form.paypal.ipndebug.ipn_txn_type_function_not_ok';
+										$log->message = "The IPN txn type function $txnTypeFunction did not return ok";
+										$log->store();
 										break;
 									}
 								}
+							}
+							else
+							{
+								$log->message_type = 'form.paypal.ipndebug.ipn_cannot_load';
+								$log->message = "Can't load the custom IPN handler class";
+								$log->store();
 							}
 
 							if (!empty($set_list))
@@ -842,6 +873,9 @@ class PlgFabrik_FormPaypal extends PlgFabrik_Form
 								{
 									$status = 'form.paypal.ipnfailure.query_error';
 									$errMsg = 'sql query error: ' . $db->getErrorMsg();
+									$log->message_type = 'form.paypal.ipnfailure.query_error';
+									$log->message = $errMsg;
+									$log->store();
 								}
 								else
 								{
@@ -857,14 +891,22 @@ class PlgFabrik_FormPaypal extends PlgFabrik_Form
 							{
 								$status = 'form.paypal.ipnfailure.set_list_empty';
 								$errMsg = 'no IPN status fields found on form for rowid: ' . $rowId;
+								$log->message_type = 'form.paypal.ipnfailure.set_list_empty';
+								$log->message = $errMsg;
+								$log->store();
 							}
 						}
 					}
-					elseif (JString::strcmp($res, "INVALID") == 0)
+					elseif (JString::strcmp($tres, "INVALID") === 0)
 					{
 						$status = 'form.paypal.ipnfailure.invalid';
 						$errMsg = 'paypal postback failed with INVALID';
+						$log->message_type = 'form.paypal.ipnfailure.invalid';
+						$log->message = $errMsg;
+						$log->store();
 					}
+
+					$fullResponse[] = $res;
 				}
 
 				fclose($fp);
@@ -891,7 +933,7 @@ class PlgFabrik_FormPaypal extends PlgFabrik_Form
 			}
 
 			$log->message_type = $status;
-			$log->message = $emailText . "\n//////////////\n" . $res . "\n//////////////\n" . $req . "\n//////////////\n" . $errMsg;
+			$log->message = $emailText . "\n//////////////\n" . implode("",$fullResponse) . "\n//////////////\n" . $req . "\n//////////////\n" . $errMsg;
 
 			if ($send_default_email == '1')
 			{

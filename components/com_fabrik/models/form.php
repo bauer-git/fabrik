@@ -4,7 +4,7 @@
  *
  * @package     Joomla
  * @subpackage  Fabrik
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -128,6 +128,11 @@ class FabrikFEModelForm extends FabModelForm
 	 * @var object
 	 */
 	protected $currentElement = null;
+
+	/**
+	 * @var JFilterInput
+	 */
+	protected $filter;
 
 	/**
 	 * If true encase table and element names with "`" when getting element list
@@ -1532,7 +1537,7 @@ class FabrikFEModelForm extends FabModelForm
 			 * $$$ hugh - There HAS to be an easier way of getting the PK element name, that doesn't involve calling getPrimaryKeyAndExtra(),
 			 * which is a horribly expensive operation.
 			 */
-			$primaryKey = FabrikString::safeColNameToArrayKey($this->getListModel()->getTable()->db_primary_key);
+			$primaryKey = $this->getListModel()->getPrimaryKey(true);
 			$data['__pk_val'] = FArrayHelper::getValue($data, $primaryKey . '_raw', FArrayHelper::getValue($data, $primaryKey, ''));
 		}
 
@@ -1688,7 +1693,7 @@ class FabrikFEModelForm extends FabModelForm
 	{
 		$input = $this->app->input;
 
-		// Set the redirect page to the form's url if making a copy and set the id to the new insertid
+		// Set the redirect page to the form's url if making a copy and set the id to the new insert id
 		if (array_key_exists('Copy', $this->formData))
 		{
 			$u = str_replace('rowid=' . $origId, 'rowid=' . $insertId, $input->get('HTTP_REFERER', '', 'string'));
@@ -1779,7 +1784,7 @@ class FabrikFEModelForm extends FabModelForm
 	/**
 	 * Process the form to the database
 	 *
-	 * @return void
+	 * @return string Insert id
 	 */
 	public function processToDB()
 	{
@@ -1806,6 +1811,7 @@ class FabrikFEModelForm extends FabModelForm
 		$this->processElements();
 
 		JDEBUG ? $profiler->mark('processToDb, onBeforeCalculations plugins: start') : null;
+
 		if (in_array(false, $pluginManager->runPlugins('onBeforeCalculations', $this)))
 		{
 			return $insertId;
@@ -1815,6 +1821,7 @@ class FabrikFEModelForm extends FabModelForm
 		$this->listModel->doCalculations();
 
 		JDEBUG ? $profiler->mark('processToDb: end') : null;
+
 		return $insertId;
 	}
 
@@ -1971,8 +1978,8 @@ class FabrikFEModelForm extends FabModelForm
 								$v = empty($encrypted) ? '' : $crypt->decrypt($encrypted);
 
 								/*
-								 * $$$ hugh - things like elementlist elements (radios, etc) seem to use
-								 * their JSON data for encrypted read only vals, need to decode.
+								 * $$$ hugh - things like element list elements (radios, etc) seem to use
+								 * their JSON data for encrypted read only values, need to decode.
 								 */
 
 								if (is_subclass_of($elementModel, 'PlgFabrik_ElementList'))
@@ -3643,7 +3650,7 @@ class FabrikFEModelForm extends FabModelForm
 	 * @param   bool    $checkInt    Check search name against element id
 	 * @param   bool    $checkShort  Check short element name
 	 *
-	 * @return  PlgFabrik_Element|boolean  ok: element model not ok: false
+	 * @return  PlgFabrik_Element  ok: element model not ok: false
 	 */
 	public function getElement($searchName, $checkInt = false, $checkShort = true)
 	{
@@ -3974,9 +3981,12 @@ class FabrikFEModelForm extends FabModelForm
 			$remove = "/{edit:\s*.*?}/i";
 			$text = preg_replace($remove, '', $text);
 			$match = "/{details:\s*.*?}/i";
+
 			$text = preg_replace_callback($match, array($this, '_getIntroOutro'), $text);
-			$text = str_replace('[', '{', $text);
-			$text = str_replace(']', '}', $text);
+
+			// Was removing [rowid] from  {fabrik view=list id=2 countries___id=[rowid]} in details intro
+			//$text = str_replace('[', '{', $text);
+			//$text = str_replace(']', '}', $text);
 		}
 		else
 		{
@@ -3986,8 +3996,10 @@ class FabrikFEModelForm extends FabModelForm
 			$remove = "/{" . $remove . ":\s*.*?}/i";
 			$text = preg_replace_callback($match, array($this, '_getIntroOutro'), $text);
 			$text = preg_replace($remove, '', $text);
-			$text = str_replace('[', '{', $text);
-			$text = str_replace(']', '}', $text);
+
+			// Was removing [rowid] from  {fabrik view=list id=2 countries___id=[rowid]} in form intro
+			//$text = str_replace('[', '{', $text);
+			//$text = str_replace(']', '}', $text);
 			$text = preg_replace("/{details:\s*.*?}/i", '', $text);
 		}
 
@@ -4258,31 +4270,7 @@ class FabrikFEModelForm extends FabModelForm
 	 */
 	public function getFormClass()
 	{
-		$class = array('fabrikForm');
-
-		/*
-		$horiz = true;
-		$groups = $this->getGroupsHiarachy();
-
-		foreach ($groups as $gkey => $groupModel)
-		{
-			$groupParams = $groupModel->getParams();
-
-			if ($groupParams->get('group_columns', 1) > 1)
-			{
-				$horiz = false;
-			}
-		}
-
-		if ($horiz
-			&& (($this->isEditable() && $params->get('labels_above', 0) != 1)
-			|| (!$this->isEditable() && $params->get('labels_above_details', 0) != 1)))
-		{
-			$class[] = 'form-horizontal';
-		}
-		*/
-
-		return implode(' ', $class);
+		return 'fabrikForm';
 	}
 
 	/**
@@ -4704,8 +4692,8 @@ class FabrikFEModelForm extends FabModelForm
 
 			if ((int) $groupParams->get('group_columns', 1) == 1)
 			{
-				if (($this->isEditable() && $params->get('labels_above', 0) != 1)
-					|| (!$this->isEditable() && $params->get('labels_above_details', 0) != 1))
+				if (($this->isEditable() && $groupModel->labelPosition('form') !== 1)
+					|| (!$this->isEditable() && $groupModel->labelPosition('details') !== 1))
 				{
 					$group->class[] = 'form-horizontal';
 				}

@@ -4,7 +4,7 @@
  *
  * @package     Joomla
  * @subpackage  Fabrik
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -102,7 +102,7 @@ class PlgFabrik_Element extends FabrikPlugin
 	/**
 	 * Element object
 	 *
-	 * @var JTable
+	 * @var FabrikTableElement
 	 */
 	public $element = null;
 
@@ -288,7 +288,7 @@ class PlgFabrik_Element extends FabrikPlugin
 	 *
 	 * @param   bool  $force  default false - force load the element
 	 *
-	 * @return  object  element table
+	 * @return  FabrikTableElement  element table
 	 */
 	public function &getElement($force = false)
 	{
@@ -944,7 +944,7 @@ class PlgFabrik_Element extends FabrikPlugin
 	 *
 	 * @return  bool can use or not
 	 */
-	public function canUse($location = null, $event = null)
+	public function canUse($location = 'form', $event = null)
 	{
 		// Odd! even though defined in initialize() for confirmation plugin access was not set.
 		if (!isset($this->access))
@@ -978,6 +978,38 @@ class PlgFabrik_Element extends FabrikPlugin
 
 				$groups = $this->user->getAuthorisedViewLevels();
 				$this->access->use = in_array($viewLevel, $groups);
+
+				// Override with check on lookup element's value = logged in user id.
+				$params = $this->getParams();
+
+				if (!$this->access->use && $params->get('edit_access_user', '') !== '' && $location == 'form')
+				{
+					$formModel = $this->getFormModel();
+					$data = $formModel->getData();
+
+					if (!empty($data) &&  $this->user->get('id') !== 0)
+					{
+						$lookUpId = $params->get('edit_access_user', '');
+						$lookUp = $formModel->getElement($lookUpId, true);
+
+						// Could be  a linked parent element in which case the form doesn't contain the element whose id is $lookUpId
+						if (!$lookUp)
+						{
+							$lookUp = FabrikWorker::getPluginManager()->getElementPlugin($lookUpId);
+						}
+
+						if ($lookUp)
+						{
+							$fullName = $lookUp->getFullName(true, true);
+							$value = (array) $formModel->getElementData($fullName, true);
+							$this->access->use = in_array($this->user->get('id'), $value);
+						}
+						else
+						{
+							FabrikWorker::logError('Did not load element ' . $lookUpId . ' for element::canUse()', 'error');
+						}
+					}
+				}
 			}
 		}
 
@@ -1532,8 +1564,10 @@ class PlgFabrik_Element extends FabrikPlugin
 		$displayData->hasLabel = $this->get('hasLabel');
 		$displayData->view = $this->app->input->get('view', 'form');
 		$displayData->tip = $this->tipHtml($model->data);
+		$displayData->tipText = $this->tipTextAndValidations('form', $model->data);
 		$displayData->rollOver = $this->isTipped();
 		$displayData->isEditable = $this->isEditable();
+		$displayData->tipOpts = $this->tipOpts();
 
 		$labelClass = '';
 
@@ -1561,7 +1595,7 @@ class PlgFabrik_Element extends FabrikPlugin
 		}
 
 		$displayData->icons = '';
-		$iconOpts  = array('icon-class' => 'small');
+		$iconOpts = array('icon-class' => 'small');
 
 		if ($displayData->rollOver)
 		{
@@ -1572,8 +1606,8 @@ class PlgFabrik_Element extends FabrikPlugin
 		{
 			$displayData->icons .= $this->validator->labelIcons();
 		}
-		$displayData->labelClass = $labelClass;
 
+		$displayData->labelClass = $labelClass;
 		$layout = FabrikHelperHTML::getLayout('fabrik-element-label', $this->labelPaths());
 
 		$str = $layout->render($displayData);
@@ -1716,6 +1750,7 @@ class PlgFabrik_Element extends FabrikPlugin
 
 		// $$$ rob - looks like htmlspecialchars is needed otherwise invalid markup created and pdf output issues.
 		$rollOver = htmlspecialchars($rollOver, ENT_QUOTES);
+		//$rollOver = str_replace('"', '&quot;', $rollOver);
 
 		return $rollOver;
 	}
@@ -1888,68 +1923,62 @@ class PlgFabrik_Element extends FabrikPlugin
 	 * Copy an element table row
 	 *
 	 * @param   int     $id       Element id to copy
-	 * @param   string  $copytxt  Feedback msg
-	 * @param   int     $groupid  Group model id
+	 * @param   string  $copyText  Feedback msg
+	 * @param   int     $groupId  Group model id
 	 * @param   string  $name     New element name
 	 *
 	 * @return  mixed	Error or new row
 	 */
-	public function copyRow($id, $copytxt = 'Copy of %s', $groupid = null, $name = null)
+	public function copyRow($id, $copyText = 'Copy of %s', $groupId = null, $name = null)
 	{
+		/** @var FabrikTableElement $rule */
 		$rule = FabTable::getInstance('Element', 'FabrikTable');
 
-		if ($rule->load((int) $id))
+		$rule->load((int) $id);
+		$rule->id = null;
+		$rule->label = sprintf($copyText, $rule->label);
+
+		if (!is_null($groupId))
 		{
-			$rule->id = null;
-			$rule->label = sprintf($copytxt, $rule->label);
+			$rule->group_id = $groupId;
+		}
 
-			if (!is_null($groupid))
+		if (!is_null($name))
+		{
+			$rule->name = $name;
+		}
+
+		$groupModel = JModelLegacy::getInstance('Group', 'FabrikFEModel');
+		$groupModel->setId($groupId);
+		$groupListModel = $groupModel->getListModel();
+
+		// $$$ rob - if its a joined group then it can have the same element names
+		if ((int) $groupModel->getGroup()->is_join === 0)
+		{
+			if ($groupListModel->fieldExists($rule->name))
 			{
-				$rule->group_id = $groupid;
-			}
-
-			if (!is_null($name))
-			{
-				$rule->name = $name;
-			}
-
-			$groupModel = JModelLegacy::getInstance('Group', 'FabrikFEModel');
-			$groupModel->setId($groupid);
-			$groupListModel = $groupModel->getListModel();
-
-			// $$$ rob - if its a joined group then it can have the same element names
-			if ((int) $groupModel->getGroup()->is_join === 0)
-			{
-				if ($groupListModel->fieldExists($rule->name))
-				{
-					return JError::raiseWarning(500, FText::_('COM_FABRIK_ELEMENT_NAME_IN_USE'));
-				}
-			}
-
-			$date = $this->date;
-			$tz = new DateTimeZone($this->app->get('offset'));
-			$date->setTimezone($tz);
-			$rule->created = $date->toSql();
-			$params = $rule->params == '' ? new stdClass : json_decode($rule->params);
-			$params->parent_linked = 1;
-			$rule->params = json_encode($params);
-			$rule->parent_id = $id;
-			$config = JComponentHelper::getParams('com_fabrik');
-
-			if ($config->get('unpublish_clones', false))
-			{
-				$rule->published = 0;
-			}
-
-			if (!$rule->store())
-			{
-				return JError::raiseWarning($rule->getError());
+				$this->app->enqueueMessage(FText::_('COM_FABRIK_ELEMENT_NAME_IN_USE'), 'error');
+				return;
 			}
 		}
-		else
+
+		$date = $this->date;
+		$tz = new DateTimeZone($this->app->get('offset'));
+		$date->setTimezone($tz);
+		$rule->created = $date->toSql();
+		$params = $rule->params == '' ? new stdClass : json_decode($rule->params);
+		$params->parent_linked = 1;
+		$rule->params = json_encode($params);
+		$rule->parent_id = $id;
+		$config = JComponentHelper::getParams('com_fabrik');
+
+		if ($config->get('unpublish_clones', false))
 		{
-			return JError::raiseWarning(500, $rule->getError());
+			$rule->published = 0;
 		}
+
+		$rule->store();
+
 
 		/**
 		 * I thought we did this in an overridden element model method, like onCopy?
@@ -2093,10 +2122,8 @@ class PlgFabrik_Element extends FabrikPlugin
 			$tip = FabrikHelperHTML::image('question-sign.png', 'form', $tmpl) . ' ' . $tip;
 		}
 
-		$global_labels = $model->getParams()->get('labels_above');
-		$global_dlabels = $model->getParams()->get('labels_above_details');
-		$element->labels = $group->labels == -1 ? $global_labels : $group->labels;
-		$element->dlabels = $group->dlabels == -1 ? $global_dlabels : $group->dlabels;
+		$element->labels = $groupModel->labelPosition('form');
+		$element->dlabels = $groupModel->labelPosition('details');
 
 		switch ($model->getParams()->get('tiplocation'))
 		{
@@ -4386,11 +4413,9 @@ class PlgFabrik_Element extends FabrikPlugin
 	/**
 	 * Called from admin element controller when element is removed
 	 *
-	 * @param   bool  $drop  has the user elected to drop column?
-	 *
 	 * @return  bool  save ok or not
 	 */
-	public function onRemove($drop = false)
+	public function onRemove()
 	{
 		// Delete js actions
 		$db = FabrikWorker::getDbo(true);
@@ -5394,11 +5419,17 @@ class PlgFabrik_Element extends FabrikPlugin
 			$shim['element/' . $name . '/' . $name] = $s;
 		}
 
+		$formId = $this->getFormModel()->getId();
 		static $elementClasses;
 
 		if (!isset($elementClasses))
 		{
 			$elementClasses = array();
+		}
+
+		if (!array_key_exists($formId, $elementClasses))
+		{
+			$elementClasses[$formId] = array();
 		}
 		// Load up the default script
 		if ($script == '')
@@ -5406,10 +5437,10 @@ class PlgFabrik_Element extends FabrikPlugin
 			$script = 'plugins/fabrik_element/' . $name . '/' . $name . $ext;
 		}
 
-		if (empty($elementClasses[$script]))
+		if (empty($elementClasses[$formId][$script]))
 		{
 			$srcs[] = $script;
-			$elementClasses[$script] = 1;
+			$elementClasses[$formId][$script] = 1;
 		}
 	}
 
@@ -5598,7 +5629,7 @@ class PlgFabrik_Element extends FabrikPlugin
 	/**
 	 * Get join row
 	 *
-	 * @return  JTable	join table or false if not loaded
+	 * @return  FabrikTableJoin	join table or false if not loaded
 	 */
 	protected function getJoin()
 	{
@@ -6537,7 +6568,7 @@ class PlgFabrik_Element extends FabrikPlugin
 	 *
 	 * @return  array
 	 */
-	protected function getElementDescendents($id = 0)
+	public function getElementDescendents($id = 0)
 	{
 		if (empty($id))
 		{
@@ -6639,7 +6670,7 @@ class PlgFabrik_Element extends FabrikPlugin
 	/**
 	 * get the element's associated join model
 	 *
-	 * @return  object	join model
+	 * @return  FabrikFEModelJoin	join model
 	 */
 	public function getJoinModel()
 	{

@@ -4,7 +4,7 @@
  *
  * @package     Joomla
  * @subpackage  Fabrik
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -111,11 +111,8 @@ class FabrikFEModelFormsession extends FabModel
 	{
 		// Need to check for encrypted vars, unencrypt them and place them back in the array
 		$post = $formModel->setFormData();
-		$app = JFactory::getApplication();
-		$input = $app->input;
+		$input = $this->app->input;
 		$formModel->copyToRaw($post);
-		$fabrik_vars = FArrayHelper::getValue($post, 'fabrik_vars', array());
-		$querystring = FArrayHelper::getValue($fabrik_vars, 'querystring', array());
 		$formModel->addEncrytedVarsToArray($post);
 
 		if (array_key_exists('fabrik_vars', $post))
@@ -125,11 +122,9 @@ class FabrikFEModelFormsession extends FabModel
 
 		$data = serialize($post);
 		$hash = $this->getHash();
-		$userId = $this->getUserId();
-		$user = JFactory::getUser();
 		$row = $this->load();
 		$row->hash = $hash;
-		$row->user_id = (int) $user->get('id');
+		$row->user_id = (int) $this->user->get('id');
 		$row->form_id = $this->getFormId();
 		$row->row_id = $this->getRowId();
 		$row->last_page = $input->get('page');
@@ -144,8 +139,7 @@ class FabrikFEModelFormsession extends FabModel
 
 		// $$$ hugh - if we're saving the formdata in the session, we should set 'session.on'
 		// as per The New Way we're doing redirects, etc.
-		$session = JFactory::getSession();
-		$session->set('com_' . $this->package . '.form.' . $this->getFormId() . '.session.on', true);
+		$this->session->set('com_' . $this->package . '.form.' . $this->getFormId() . '.session.on', true);
 	}
 
 	/**
@@ -164,8 +158,7 @@ class FabrikFEModelFormsession extends FabModel
 
 		$crypt = $this->getCrypt();
 		$lifetime = time() + 365 * 24 * 60 * 60;
-		$user = JFactory::getUser();
-		$key = (int) $user->get('id') . ':' . $this->getFormId() . ':' . $this->getRowId();
+		$key = (int) $this->user->get('id') . ':' . $this->getFormId() . ':' . $this->getRowId();
 		$rcookie = $crypt->encrypt($hash);
 		setcookie($key, $rcookie, $lifetime, '/');
 	}
@@ -177,9 +170,8 @@ class FabrikFEModelFormsession extends FabModel
 	 */
 	protected function removeCookie()
 	{
-		$user = JFactory::getUser();
 		$lifetime = time() - 99986400;
-		$key = (int) $user->get('id') . ':' . $this->getFormId() . ':' . $this->getRowId();
+		$key = (int) $this->user->get('id') . ':' . $this->getFormId() . ':' . $this->getRowId();
 		setcookie($key, false, $lifetime, '/');
 	}
 
@@ -296,10 +288,9 @@ class FabrikFEModelFormsession extends FabModel
 	 */
 	public function canUseCookie()
 	{
-		$session = JFactory::getSession();
 		$formId = $this->getFormId();
 
-		if ($session->get('com_' . $this->package . '.form.' . $formId . '.session.on'))
+		if ($this->session->get('com_' . $this->package . '.form.' . $formId . '.session.on'))
 		{
 			return true;
 		}

@@ -4,7 +4,7 @@
  *
  * @package     Joomla
  * @subpackage  Fabrik
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  * @since       1.6
  */
@@ -61,7 +61,6 @@ class JFormFieldListfields extends JFormFieldList
 		$formModel     = false;
 		$filter        = $this->getAttribute('filter');
 		$pluginFilters = trim($filter) == '' ? array() : explode('|', $filter);
-		$attribs       = $this->element['@attributes'];
 		$connection    = $this->getAttribute('connection');
 		/*
 		 * 27/08/2011 - changed from default table-element to id - for juser form plugin - might cause havoc
@@ -314,6 +313,7 @@ class JFormFieldListfields extends JFormFieldList
 			return;
 		}
 
+		/** @var FabrikFEModelForm $formModel */
 		$formModel = $this->form->model;
 		$valField  = $valueFormat == 'tableelement' ? 'name' : 'id';
 		$res       = $formModel->getElementOptions($useStep, $valField, $onlyListFields, $showRaw, $pluginFilters, $labelMethod, $noJoins);
@@ -356,6 +356,13 @@ class JFormFieldListfields extends JFormFieldList
 	 */
 	private function js($res = array())
 	{
+		$at = (string) $this->getAttribute('at', 'false');
+
+		if ($at === 'true')
+		{
+			FabrikHelperHTML::atWHo('textarea[data-at]', JArrayHelper::getColumn($res, 'value'));
+		}
+
 		$connection        = $this->getAttribute('connection');
 		$repeat            = FabrikWorker::toBoolean($this->getAttribute('repeat', false), false);
 		$repeat            = FabrikAdminElementHelper::getRepeat($this) || $repeat;
@@ -395,24 +402,29 @@ class JFormFieldListfields extends JFormFieldList
 	 *
 	 * @return  string  Textarea GUI
 	 */
-
 	private function gui()
 	{
-		$attribs   = $this->element['@attributes'];
-		$str       = array();
-		$modeField = (string) $this->getAttribute('modefield', 'textarea');
+		$str         = array();
+		$modeField   = (string) $this->getAttribute('modefield', 'textarea');
+		$class       = $this->element['class'] ? ' class="' . (string) $this->element['class'] . '"' : '';
+		$placeholder = $this->element['placeholder'] ? ' placeholder="' . (string) $this->element['placeholder'] . '"' : '';
+		$at          = (string) $this->getAttribute('at', 'false');
+
+		$rows = $this->element['rows'] ? $this->element['rows'] : 3;
 
 		if ($modeField === 'textarea')
 		{
-			$str[] = '<textarea cols="20" row="3" id="' . $this->id . '" name="' . $this->name . '">' . $this->value . '</textarea>';
+			$str[] = '<textarea ' . $class . $placeholder . ' data-at cols="20" rows="' . $rows . '" id="' . $this->id . '" name="' . $this->name . '">' . $this->value . '</textarea>';
 		}
 		else
 		{
-			$str[] = '<input class="input" id="' . $this->id . '" name="' . $this->name . '" value="' . $this->value . '" />';
+			$str[] = '<input ' . $class . $placeholder . ' id="' . $this->id . '" name="' . $this->name . '" value="' . $this->value . '" />';
 		}
 
+		$str[] = $at === 'true' ? '<div style="display:none">' : '';
 		$str[] = '<button class="button btn"><span class="icon-arrow-left"></span> ' . FText::_('COM_FABRIK_ADD') . '</button>';
 		$str[] = '<select class="elements"></select>';
+		$str[] = $at === 'true' ? '</div>' : '';
 
 		return implode("\n", $str);
 	}
@@ -426,7 +438,6 @@ class JFormFieldListfields extends JFormFieldList
 	 *
 	 * @return array
 	 */
-
 	protected function loadFromGroupId($groupId)
 	{
 		$app            = JFactory::getApplication();

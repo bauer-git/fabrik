@@ -1,10 +1,11 @@
 <?php
+use Zend\Db\Sql\Ddl\Column\Boolean;
 /**
  * Plugin element to render fields
  *
  * @package     Joomla.Plugin
  * @subpackage  Fabrik.element.field
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -22,6 +23,7 @@ jimport('joomla.application.component.model');
  */
 class PlgFabrik_ElementField extends PlgFabrik_Element
 {
+
 	/**
 	 * Shows the data formatted for the list view
 	 *
@@ -44,7 +46,10 @@ class PlgFabrik_ElementField extends PlgFabrik_Element
 
 			if ($params->get('render_as_qrcode', '0') === '1')
 			{
-				$d = $this->qrCodeLink($thisRow);
+				if (!empty($d))
+				{
+					$d = $this->qrCodeLink($thisRow);
+				}
 			}
 		}
 
@@ -53,16 +58,22 @@ class PlgFabrik_ElementField extends PlgFabrik_Element
 
 	/**
 	 * Format the string for use in list view, email data
-	 * @param $d
+	 *
+	 * @param  $d             data
+	 * @param  $doNumberFormat  run numberFormat()
 	 *
 	 * @return string
 	 */
-	protected function format(&$d)
+	protected function format(&$d, $doNumberFormat = true)
 	{
 		$params = $this->getParams();
 		$format = $params->get('text_format_string');
 		$formatBlank = $params->get('field_format_string_blank', true);
-		$d = $this->numberFormat($d);
+
+		if ($doNumberFormat)
+		{
+			$d = $this->numberFormat($d);
+		}
 
 		if ($format != '' && ($formatBlank || $d != ''))
 		{
@@ -129,16 +140,26 @@ class PlgFabrik_ElementField extends PlgFabrik_Element
 			if ($params->get('render_as_qrcode', '0') === '1')
 			{
 				// @TODO - skip this is new form
-				$value = $this->qrCodeLink($data);
+				if (!empty($value))
+				{
+					$value = $this->qrCodeLink($data);
+				}
 			}
 			else
 			{
 				$this->_guessLinkType($value, $data);
-				$value = $this->format($value);
+				$value = $this->format($value, false);
 				$value = $this->getReadOnlyOutput($value, $value);
 			}
 
 			return ($element->hidden == '1') ? "<!-- " . $value . " -->" : $value;
+		}
+		else
+		{
+			if ($params->get('autocomplete', '0') === '3')
+			{
+				$bits['class'] .= ' fabrikGeocomplete';
+			}
 		}
 
 		/* stop "'s from breaking the content out of the field.
@@ -221,7 +242,9 @@ class PlgFabrik_ElementField extends PlgFabrik_Element
 				$opts['title'] = strip_tags($w->parseMessageForPlaceHolder($title, $data));
 			}
 
-			$value = FabrikHelperHTML::a($value, $value, $opts);
+			$label = FArrayHelper::getValue($opts, 'title', '') !== '' ? $opts['title'] : $value;
+
+			$value = FabrikHelperHTML::a($value, $label, $opts);
 		}
 	}
 
@@ -286,6 +309,8 @@ class PlgFabrik_ElementField extends PlgFabrik_Element
 			$opts->input_mask = '';
 		}
 
+		$opts->geocomplete = $params->get('autocomplete', '0') === '3';
+
 		if ($this->getParams()->get('autocomplete', '0') == '2')
 		{
 			$autoOpts = array();
@@ -311,14 +336,33 @@ class PlgFabrik_ElementField extends PlgFabrik_Element
 	{
 		$params = $this->getParams();
 		$inputMask = trim($params->get('text_input_mask', ''));
+		$geocomplete = $params->get('autocomplete', '0') === '3';
+
+		$s = new stdClass;
+		$s->deps = array('fab/element');
 
 		if (!empty($inputMask))
 		{
-			$s = new stdClass;
-			$s->deps = array('fab/element');
 			$folder = 'components/com_fabrik/libs/masked_input/';
 			$s->deps[] = $folder . 'jquery.maskedinput';
-			$shim['element/field/field'] = $s;
+		}
+
+		if ($geocomplete)
+		{
+			$folder = 'components/com_fabrik/libs/googlemaps/geocomplete/';
+			$s->deps[] = $folder . 'jquery.geocomplete';
+		}
+
+		if (count($s->deps) > 1)
+		{
+			if (array_key_exists('element/field/field', $shim))
+			{
+				$shim['element/field/field']->deps = array_merge($shim['element/field/field']->deps, $s->deps);
+			}
+			else
+			{
+				$shim['element/field/field'] = $s;
+			}
 		}
 
 		parent::formJavascriptClass($srcs, $script, $shim);
@@ -502,36 +546,44 @@ class PlgFabrik_ElementField extends PlgFabrik_Element
 		$elName = $this->getFullName(true, false);
 		$value = $row->$elName;
 
+		/*
 		require JPATH_SITE . '/components/com_fabrik/libs/qrcode/qrcode.php';
 
 		// Usage: $a=new QR('234DSKJFH23YDFKJHaS');$a->image(4);
 		$qr = new QR($value);
 		$img = $qr->image(4);
+		*/
 
-		if (!empty($img))
+		if (!empty($value))
 		{
-			// Some time in the past
-			header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
-			header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
-			header("Cache-Control: no-store, no-cache, must-revalidate");
-			header("Cache-Control: post-check=0, pre-check=0", false);
-			header("Pragma: no-cache");
-			header('Accept-Ranges: bytes');
-			header('Content-Length: ' . strlen($img));
-			header('Content-Type: ' . 'image/gif');
+			require JPATH_SITE . '/components/com_fabrik/libs/phpqrcode/phpqrcode.php';
 
-			// Serve up the file
-			echo $img;
-
-			// And we're done.
-			exit();
+			ob_start();
+			QRCode::png($value);
+			$img = ob_get_contents();
+			ob_end_clean();
 		}
-		else
+
+		if (empty($img))
 		{
-			$this->app->enqueueMessage(FText::_('PLG_ELEMENT_FIELD_NO_SUCH_FILE'));
-			$this->app->redirect($url);
-			exit;
+			$img = file_get_contents(JPATH_SITE . '/media/system/images/notice-note.png');
 		}
+
+		// Some time in the past
+		header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
+		header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
+		header("Cache-Control: no-store, no-cache, must-revalidate");
+		header("Cache-Control: post-check=0, pre-check=0", false);
+		header("Pragma: no-cache");
+		header('Accept-Ranges: bytes');
+		header('Content-Length: ' . strlen($img));
+		//header('Content-Type: ' . 'image/gif');
+
+		// Serve up the file
+		echo $img;
+
+		// And we're done.
+		exit();
 	}
 
 	/**

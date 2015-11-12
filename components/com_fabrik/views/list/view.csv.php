@@ -4,7 +4,7 @@
  *
  * @package     Joomla
  * @subpackage  Fabrik
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -31,9 +31,7 @@ class FabrikViewList extends FabrikViewListBase
 	 */
 	public function display($tpl = null)
 	{
-		$app = JFactory::getApplication();
-		$input = $app->input;
-		$session = JFactory::getSession();
+		$input = $this->app->input;
 
 		/** @var FabrikFEModelCSVExport $exporter */
 		$exporter = JModelLegacy::getInstance('Csvexport', 'FabrikFEModel');
@@ -72,18 +70,18 @@ class FabrikViewList extends FabrikViewListBase
 		// If we are asking for a new export - clear previous total as list may be filtered differently
 		if ($start === 0)
 		{
-			$session->clear($key);
+			$this->session->clear($key);
 		}
 
-		if (!$session->has($key))
+		if (!$this->session->has($key))
 		{
 			// Only get the total if not set - otherwise causes memory issues when we downloading
 			$total = $model->getTotalRecords();
-			$session->set($key, $total);
+			$this->session->set($key, $total);
 		}
 		else
 		{
-			$total = $session->get($key);
+			$total = $this->session->get($key);
 		}
 
 		if ($start < $total)
@@ -97,7 +95,8 @@ class FabrikViewList extends FabrikViewListBase
 				return;
 			}
 
-			$canDownload = $start + $limit >= $total;
+			$download = (bool) $input->getInt('download', true);
+			$canDownload = ($start + $limit >= $total) && $download;
 			$exporter->writeFile($total, $canDownload);
 
 			if ($canDownload)
@@ -124,22 +123,11 @@ class FabrikViewList extends FabrikViewListBase
 	 */
 	protected function download($model, $exporter, $key)
 	{
-		$session = JFactory::getSession();
-		$input = JFactory::getApplication()->input;
+		$input = $this->app->input;
 		$input->set('limitstart' . $model->getId(), 0);
-		$download = $input->getBool('download', true);
 
 		// Remove the total from the session
-		$session->clear($key);
-
-		if ($download)
-		{
-			$exporter->downloadFile();
-		}
-		else
-		{
-			$exporter->writeCSVFile();
-		}
-
+		$this->session->clear($key);
+		$exporter->downloadFile();
 	}
 }

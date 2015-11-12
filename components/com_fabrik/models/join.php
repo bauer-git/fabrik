@@ -4,7 +4,7 @@
  *
  * @package     Joomla
  * @subpackage  Fabrik
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -151,7 +151,6 @@ class FabrikFEModelJoin extends FabModel
 	{
 		if (!isset($this->join))
 		{
-			$db = FabrikWorker::getDbo(true);
 			$this->join = FabTable::getInstance('join', 'FabrikTable');
 			$this->join->load(array($key => $id));
 			$this->paramsType($this->join);

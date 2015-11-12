@@ -4,7 +4,7 @@
  *
  * @package     Joomla.Plugin
  * @subpackage  Fabrik.element.password
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -125,8 +125,7 @@ class PlgFabrik_ElementPassword extends PlgFabrik_Element
 		}
 
 		$input    = $this->app->input;
-		$k        = $this->getlistModel()->getTable()->db_primary_key;
-		$k        = FabrikString::safeColNameToArrayKey($k);
+		$k        = $this->getlistModel()->getPrimaryKey(true);
 		$element  = $this->getElement();
 		$origName = $element->name;
 

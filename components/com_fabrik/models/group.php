@@ -4,7 +4,7 @@
  *
  * @package     Joomla
  * @subpackage  Fabrik
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -1046,6 +1046,29 @@ class FabrikFEModelGroup extends FabModel
 		}
 
 		return $group;
+	}
+
+	/**
+	 * Get the label positions, if set to global then return form's label positions
+	 *
+	 * @param string $view   form|details
+	 *
+	 * @return int
+	 */
+	public function labelPosition($view = 'form')
+	{
+		$property = $view === 'form' ? 'labels_above' : 'labels_above_details';
+		$params = $this->getParams();
+
+		$position = (int) $params->get($property, -1);
+
+		if ($position === -1)
+		{
+			$formParams = $this->getFormModel()->getParams();
+			$position = (int) $formParams->get($property, 0);
+		}
+
+		return $position;
 	}
 
 	/**

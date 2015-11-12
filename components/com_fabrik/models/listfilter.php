@@ -4,7 +4,7 @@
  *
  * @package     Joomla
  * @subpackage  Fabrik
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -677,13 +677,15 @@ class FabrikFEModelListfilter extends FabModel
 
 			// $$$ rob so search all on checkboxes/radio buttons etc. will take the search value of 'one' and return '1'
 			$newSearch = $elementModel->getFilterValue($search, $condition, $eval);
+			$newCondition = $newSearch[1];
 			$newSearch = $newSearch[0];
+
 
 			if ($key !== false)
 			{
 				$filters['orig_condition'][$key] = $condition;
 				$filters['value'][$key] = $newSearch;
-				$filters['condition'][$key] = $condition;
+				$filters['condition'][$key] = $newCondition;
 				$filters['join'][$key] = 'OR';
 				$filters['no-filter-setup'][$key] = ($element->filter_type == '') ? 1 : 0;
 				$filters['hidden'][$key] = ($element->filter_type == '') ? 1 : 0;

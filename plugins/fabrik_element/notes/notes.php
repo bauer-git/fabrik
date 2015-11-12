@@ -4,7 +4,7 @@
  *
  * @package     Joomla.Plugin
  * @subpackage  Fabrik.element.notes
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -294,7 +294,7 @@ class PlgFabrik_ElementNotes extends PlgFabrik_ElementDatabasejoin
 		}
 		else
 		{
-			$order = FabrikString::safeqn($params->get('join_db_name') . '.' . $orderBy) . ' ' . $params->get('notes_order_dir', 'ASC');
+			$order = FabrikString::safeQuoteName($params->get('join_db_name') . '.' . $orderBy) . ' ' . $params->get('notes_order_dir', 'ASC');
 
 			if ($query)
 			{

@@ -4,7 +4,7 @@
  *
  * @package     Joomla.Plugin
  * @subpackage  Fabrik.list.radiussearch
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -85,7 +85,7 @@ class PlgFabrik_ListRadius_Lookup extends PlgFabrik_List
 		$listModel = new FabrikFEModelList();
 		$listModel->setId($params->get('radius_lookup_list'));
 		$listModel->setLimits(0, -1);
-		$key = $listModel->getTable()->db_primary_key;
+		$key = $listModel->getPrimaryKey();
 		$listModel->setPluginQueryWhere('list.radius_lookup', $key . ' IN (' . implode(',', $ids) . ')');
 		$data = $listModel->getData();
 		$distanceField = $params->get('distance_field') . '_raw';

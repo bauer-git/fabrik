@@ -4,7 +4,7 @@
  *
  * @package     Joomla.Plugin
  * @subpackage  Fabrik.element.cascadingdropdown
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -130,7 +130,7 @@ class PlgFabrik_ElementCascadingdropdown extends PlgFabrik_ElementDatabasejoin
 
 			if ($join)
 			{
-				$val = str_replace("{thistable}", $join->table_join_alias, $val);
+				$val = $this->parseThisTable($val, $join);
 			}
 
 			$w = new FabrikWorker;
@@ -562,7 +562,7 @@ class PlgFabrik_ElementCascadingdropdown extends PlgFabrik_ElementDatabasejoin
 
 		if ($filterView == 'table')
 		{
-			array_unshift($this->optionVals[$sqlKey], JHTML::_('select.option', '', $this->filterSelectLabel()));
+			array_unshift($this->optionVals[$sqlKey], JHTML::_('select.option', $params->get('cascadingdropdown_noselectionvalue', ''), $this->filterSelectLabel()));
 		}
 		else
 		{
@@ -862,7 +862,7 @@ class PlgFabrik_ElementCascadingdropdown extends PlgFabrik_ElementDatabasejoin
 		// $$$ hugh - add some useful stuff to search data
 		$placeholders = is_null($whereVal) ? array() : array('whereval' => $whereVal, 'wherekey' => $whereKey);
 		$join = $this->getJoin();
-		$where = str_replace("{thistable}", $join->table_join_alias, $where);
+		$where = $this->parseThisTable($where, $join);
 
 		if (!empty($this->autocomplete_where))
 		{
@@ -881,7 +881,7 @@ class PlgFabrik_ElementCascadingdropdown extends PlgFabrik_ElementDatabasejoin
 
 		if (!empty($val))
 		{
-			$val = str_replace("{thistable}", $join->table_join_alias, $val);
+			$val = $this->parseThisTable($val, $join);
 			$val = $w->parseMessageForPlaceHolder($val, $data);
 			$val = 'CONCAT_WS(\'\', ' . $val . ')';
 			$orderBy = $val;
@@ -984,7 +984,7 @@ class PlgFabrik_ElementCascadingdropdown extends PlgFabrik_ElementDatabasejoin
 		else
 		{
 			$w = new FabrikWorker;
-			$val = str_replace("{thistable}", $join->table_join_alias, $params->get('cascadingdropdown_label_concat'));
+			$val = $this->parseThisTable($params->get('cascadingdropdown_label_concat'), $join);
 			$val = $w->parseMessageForPlaceHolder($val, array());
 
 			return 'CONCAT_WS(\'\', ' . $val . ')';

@@ -4,7 +4,7 @@
  *
  * @package     Joomla.Plugin
  * @subpackage  Fabrik.form.paginate
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -222,7 +222,7 @@ class PlgFabrik_FormPaginate extends PlgFabrik_Form
 		$opts->liveSite = COM_FABRIK_LIVESITE;
 		$opts->view = $input->get('view');
 		$opts->ids = $this->ids;
-		$opts->pkey = FabrikString::safeColNameToArrayKey($formModel->getListModel()->getTable()->db_primary_key);
+		$opts->pkey = $formModel->getListModel()->getPrimaryKey(true);
 		$opts = json_encode($opts);
 		$container = $formModel->jsKey();
 		$this->formJavascriptClass();

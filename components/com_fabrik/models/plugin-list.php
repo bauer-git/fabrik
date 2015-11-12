@@ -4,7 +4,7 @@
  *
  * @package     Joomla
  * @subpackage  Fabrik
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -81,6 +81,16 @@ class PlgFabrik_List extends FabrikPlugin
 	}
 
 	/**
+	 * Can the plug-in use AJAX
+	 *
+	 * @return  bool
+	 */
+	public function canAJAX()
+	{
+		return true;
+	}
+
+	/**
 	 * Get the button label
 	 *
 	 * @return  string
@@ -125,12 +135,39 @@ class PlgFabrik_List extends FabrikPlugin
 			$name = $this->_getButtonName();
 			$label = $this->buttonLabel();
 			$imageName = $this->getImageName();
-			$img = FabrikHelperHTML::image($imageName, 'list', '', $label);
-			$text = $this->buttonAction == 'dropdown' ? $label : '<span class="hidden">' . $label . '</span>';
-			$btnClass = ($j3 && $this->buttonAction != 'dropdown') ? 'btn ' : '';
-			$a = '<a href="#" data-list="' . $this->context . '" class="' . $btnClass . $name . ' listplugin" title="' . $label . '">';
+			$tmpl = $this->getModel()->getTmpl();
+			$properties = array();
+			$opts =  array(
+				'forceImage' => false
+			);
 
-			return $a . $img . ' ' . $text . '</a>';
+			if (FabrikWorker::isImageExtension($imageName))
+			{
+				$opts['forceImage'] = true;
+			}
+
+
+			$img = FabrikHelperHTML::image($imageName, 'list', $tmpl, $properties, false, $opts);
+			$text = $this->buttonAction == 'dropdown' ? $label : '<span class="hidden">' . $label . '</span>';
+
+			if ($j3 && $this->buttonAction != 'dropdown')
+			{
+				$layout = FabrikHelperHTML::getLayout('fabrik-button');
+				$layoutData = (object) array(
+					'tag' => 'a',
+					'attributes' => 'data-list="' . $this->context . '" title="' . $label . '"',
+					'class' => $name . ' listplugin btn-default',
+					'label' => $img . ' ' . $text
+				);
+
+				return $layout->render($layoutData);
+			}
+			else
+			{
+				$a = '<a href="#" data-list="' . $this->context . '" class="' . $name . ' listplugin" title="' . $label . '">';
+
+				return $a . $img . ' ' . $text . '</a>';
+			}
 		}
 
 		return '';
@@ -160,6 +197,7 @@ class PlgFabrik_List extends FabrikPlugin
 		$opts->ref = $model->getRenderContext();
 		$opts->name = $this->_getButtonName();
 		$opts->listid = $model->getId();
+		$opts->canAJAX = $this->canAJAX();
 
 		return $opts;
 	}

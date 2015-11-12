@@ -4,7 +4,7 @@
  *
  * @package     Joomla.Plugin
  * @subpackage  Fabrik.element.tags
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -166,7 +166,14 @@ class PlgFabrik_ElementTags extends PlgFabrik_ElementDatabasejoin
 				$where = '';
 			}
 			*/
-			$where = $fk . ' = ' . $db->quote($rowId);
+			if (FArrayHelper::getValue($opts, 'mode', '') !== 'filter')
+			{
+				$where = $fk . ' = ' . $db->quote($rowId);
+			}
+			else
+			{
+				$where = '';
+			}
 		}
 
 		$params->set('database_join_where_sql',  $where);

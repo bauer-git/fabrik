@@ -4,7 +4,7 @@
  *
  * @package     Joomla.Plugin
  * @subpackage  Fabrik.visualization.googlemap
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -51,7 +51,6 @@ class FabrikModelGooglemap extends FabrikFEModelVisualization
 	 *
 	 * @return  string
 	 */
-
 	public function getText()
 	{
 		return $this->txt;
@@ -301,7 +300,6 @@ class FabrikModelGooglemap extends FabrikFEModelVisualization
 			}
 
 			$template_nl2br = FArrayHelper::getValue($templates_nl2br, $c, '1') == '1';
-			$table = $listModel->getTable();
 			$mapsElements = FabrikHelperList::getElements($listModel, array('plugin' => 'googlemap', 'published' => 1));
 			$coordColumn = $mapsElements[0]->getFullName(true, false) . "_raw";
 
@@ -348,6 +346,8 @@ class FabrikModelGooglemap extends FabrikFEModelVisualization
 
 					$rowData = JArrayHelper::fromObject($row);
 					$rowData['rowid'] = $rowData['__pk_val'];
+					$rowData['coords'] = $v[0] . ',' . $v[1];
+					$rowData['nav_url'] = "http://maps.google.com/maps?q=loc:" . $rowData['coords'] . "&navigate=yes";
 					$html = $w->parseMessageForPlaceHolder($template, $rowData);
 
 					$titleElement = FArrayHelper::getValue($titleElements, $c, '');
@@ -756,9 +756,9 @@ class FabrikModelGooglemap extends FabrikFEModelVisualization
 		foreach ($models as $model)
 		{
 			$id = $model->getTable()->id;
-			$tmpls = $model->groupTemplates;
+			$templates = $model->groupTemplates;
 
-			foreach ($tmpls as $k => $v)
+			foreach ($templates as $k => $v)
 			{
 				$k = preg_replace('#[^0-9a-zA-Z_]#', '', $k);
 				$groupByTemplates[$id][$k] = $v;

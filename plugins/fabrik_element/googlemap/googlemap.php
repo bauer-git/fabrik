@@ -4,7 +4,7 @@
  *
  * @package     Joomla.Plugin
  * @subpackage  Fabrik.element.googlemap
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -21,7 +21,6 @@ require_once JPATH_SITE . '/components/com_fabrik/helpers/googlemap.php';
  * @subpackage  Fabrik.element.googlemap
  * @since       3.0
  */
-
 class PlgFabrik_ElementGooglemap extends PlgFabrik_Element
 {
 	/**
@@ -705,7 +704,22 @@ class PlgFabrik_ElementGooglemap extends PlgFabrik_Element
 		// If its not editable and there's no val don't show the map
 		$layout = $this->getLayout('static');
 		$displayData = new stdClass;
-		$displayData->src = Fabimage::cacheRemote($src, $folder, $file);
+
+		if (!$tableView || ($tableView && $params->get('fb_gm_staticmap_tableview', '0') === '1'))
+		{
+			$displayData->src = Fabimage::cacheRemote($src, $folder, $file);
+
+			// if cacheImage returned false, probably an issue with permissions on the cache folder, so punt to direct URL
+			if ($displayData->src === false)
+			{
+				$displayData->src = $src;
+			}
+		}
+		else
+		{
+			$displayData->src = $src;
+		}
+
 		$displayData->id = $id;
 		$displayData->view = $tableView ? 'list' : 'details';
 

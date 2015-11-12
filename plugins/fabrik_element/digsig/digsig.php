@@ -4,7 +4,7 @@
  *
  * @package     Joomla.Plugin
  * @subpackage  Fabrik.element.digsig
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -71,8 +71,7 @@ class PlgFabrik_ElementDigsig extends PlgFabrik_Element
 		$layoutData->name          = $name;
 		$layoutData->val           = $val;
 		$listModel                 = $this->getListModel();
-		$pk                        = $listModel->getTable()->db_primary_key;
-		$pk                        = FabrikString::safeColNameToArrayKey($pk);
+		$pk                        = $listModel->getPrimaryKey(true);
 
 		if (!$this->isEditable())
 		{

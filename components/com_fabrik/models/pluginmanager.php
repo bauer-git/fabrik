@@ -4,7 +4,7 @@
  *
  * @package     Joomla
  * @subpackage  Fabrik
- * @copyright   Copyright (C) 2005-2013 fabrikar.com - All rights reserved.
+ * @copyright   Copyright (C) 2005-2015 fabrikar.com - All rights reserved.
  * @license     GNU/GPL http://www.gnu.org/copyleft/gpl.html
  */
 
@@ -448,9 +448,9 @@ class FabrikFEModelPluginmanager extends FabModel
 				$groupModel->elements[$pluginModel->getId()] = $pluginModel;
 			}
 
-			foreach ($groupModels as $groupid => $g)
+			foreach ($groupModels as $groupId => $g)
 			{
-				$this->formPlugins[$sig][$groupid] = $g;
+				$this->formPlugins[$sig][$groupId] = $g;
 			}
 		}
 
@@ -644,8 +644,8 @@ class FabrikFEModelPluginmanager extends FabModel
 							}
 							else
 							{
-								$thisreturn = $plugin->customProcessResult($method);
-								$return[] = $thisreturn;
+								$thisReturn = $plugin->customProcessResult($method);
+								$return[] = $thisReturn;
 								$m = $method . '_result';
 
 								if (method_exists($plugin, $m))
